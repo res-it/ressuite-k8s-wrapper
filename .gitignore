@@ -1,0 +1,8 @@
+# Directories
+.vscode
+.codex
+.idea
+
+# Files
+*.log
+.env

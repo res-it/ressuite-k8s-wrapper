@@ -1,0 +1,59 @@
+{{- $batch := index .Values.ressuite "batch-watch-be" -}}
+{{- if $batch.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $batch.existingConfigMaps "logs") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.batchAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{ (.Files.Glob "files/batchwatch/internal-config/logs/*").AsConfig | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $batch.existingConfigMaps "db") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.batchAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{- $glob := "files/batchwatch/internal-config/db/*" -}}
+  {{- $internal := ((.Files.Glob $glob).AsConfig | fromYaml) | default dict -}}
+  {{- $externalRaw := (($batch.internalConfig | default dict).dbExternal | default dict) -}}
+  {{- $external := dict -}}
+  {{- range $k, $v := $externalRaw }}
+  {{- if kindIs "string" $v }}
+  {{- $path := trimPrefix "./" ($v | replace "\\" "/") -}}
+  {{- $_ := set $external $k (required (printf "missing file for ressuite.batch-watch-be.internalConfig.dbExternal.%s: %s" $k $path) ($.Files.Get $path)) -}}
+  {{- else }}
+  {{- $_ := set $external $k $v -}}
+  {{- end }}
+  {{- end }}
+  {{- mergeOverwrite $internal $external | toYaml | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $batch.existingConfigMaps "search") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.batchAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{ (.Files.Glob "files/batchwatch/internal-config/search/*").AsConfig | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $batch.existingConfigMaps "templateExcel") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.batchAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+binaryData:
+  {{ (.Files.Glob "files/batchwatch/internal-config/templateExcel/*").AsSecrets | nindent 2 }}
+{{- end }}

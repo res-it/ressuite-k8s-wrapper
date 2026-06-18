@@ -1,0 +1,59 @@
+{{- $wic := index .Values.ressuite "wicplanet-be" -}}
+{{- if $wic.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $wic.existingConfigMaps "logs") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.wicAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{ (.Files.Glob "files/wicplanet/internal-config/logs/*").AsConfig | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $wic.existingConfigMaps "db") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.wicAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{- $glob := "files/wicplanet/internal-config/db/*" -}}
+  {{- $internal := ((.Files.Glob $glob).AsConfig | fromYaml) | default dict -}}
+  {{- $externalRaw := (($wic.internalConfig | default dict).dbExternal | default dict) -}}
+  {{- $external := dict -}}
+  {{- range $k, $v := $externalRaw }}
+  {{- if kindIs "string" $v }}
+  {{- $path := trimPrefix "./" ($v | replace "\\" "/") -}}
+  {{- $_ := set $external $k (required (printf "missing file for ressuite.wicplanet-be.internalConfig.dbExternal.%s: %s" $k $path) ($.Files.Get $path)) -}}
+  {{- else }}
+  {{- $_ := set $external $k $v -}}
+  {{- end }}
+  {{- end }}
+  {{- mergeOverwrite $internal $external | toYaml | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $wic.existingConfigMaps "search") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.wicAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{ (.Files.Glob "files/wicplanet/internal-config/search/*").AsConfig | nindent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ tpl (index $wic.existingConfigMaps "etc") . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "chart-wrapper.wicAppLabel" . }}
+    {{- include "chart-wrapper.labels" . | nindent 4 }}
+data:
+  {{ (.Files.Glob "files/wicplanet/internal-config/etc/*").AsConfig | nindent 2 }}
+{{- end }}

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: chart-wrapper
+description: Wrapper chart for RES Suite to externalize config files
+type: application
+version: 7.0.34
+appVersion: "7.0.34"
+dependencies:
+  - name: ressuite
+    version: 7.0.34
+    repository: https://nexus.aws.res-it.com/repository/helm-release/
